@@ -3,6 +3,8 @@ import pytest
 import torch, tensorflow as tf
 import jax.numpy as jnp
 from jax import device_put
+from tensorflow.keras.layers import Input, Flatten, Dense
+from tensorflow.keras.models import Model
 
 import kymatio
 from kymatio import TimeFrequencyScattering
@@ -648,3 +650,27 @@ def test_986(backend):
             for psi_pos, psi_neg in zip(positive_spins, negative_spins)
         ]
     )
+
+
+def test_jtfs_keras_frontend():
+    # Test __init__
+    kwargs = {"J": 8, "J_fr": 3, "shape": (8192,), "Q": 3}
+    x = np.zeros(kwargs["shape"])
+    x[kwargs["shape"][0] // 2] = 1
+
+    # Local averaging
+    S = TimeFrequencyScattering(frontend="keras", format="joint", **kwargs)
+    assert S.F == (2**S.J_fr)
+    Sx = S(x)
+
+    # default
+    inputs0 = Input(shape=(x.shape[-1]))
+    sc0 = S(inputs0)
+    model0 = Model(inputs0, sc0)
+    model0.compile(optimizer='adam',
+                  loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+    Sx = model0.predict(x)
+
+    assert Sx.ndim == 3
+    assert S.backend.name == 'tensorflow'
