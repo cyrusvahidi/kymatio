@@ -436,7 +436,7 @@ def jtfs_average_and_format(U_gen, backend, phi_f, log2_stride, average,
         if not (out_type == 'array' and format == 'joint'):
             path['coef'] = backend.unpad_frequency(
                 path['coef'], path['n1_max'], path['n1_stride'])
-
+                
         # Splitting and reshaping
         if format == 'joint':
             yield {**path, 'order': len(path['n'])}

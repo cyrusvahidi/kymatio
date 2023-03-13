@@ -53,10 +53,9 @@ class ScatteringKeras1D(ScatteringKeras, ScatteringBase1D):
 ScatteringKeras1D._document()
 
 
-class TimeFrequecyScatteringKeras(ScatteringKeras, TimeFrequencyScatteringBase):
+class TimeFrequencyScatteringKeras(ScatteringKeras, TimeFrequencyScatteringBase):
     def __init__(
         self,
-        *,
         J,
         J_fr,
         Q,
@@ -69,7 +68,7 @@ class TimeFrequecyScatteringKeras(ScatteringKeras, TimeFrequencyScatteringBase):
     ):
         ScatteringKeras.__init__(self)
         self.J = J
-        self._J_fr = J_fr
+        self.J_fr = J_fr
         self._Q = Q
         self._T = T
         self._stride = stride
@@ -84,7 +83,7 @@ class TimeFrequecyScatteringKeras(ScatteringKeras, TimeFrequencyScatteringBase):
         shape = tuple(tensor_shape.TensorShape(input_shape).as_list()[-1:])
         self.S = TimeFrequencyScatteringTensorflow(
             J=self.J,
-            J_fr=self._J_fr,
+            J_fr=self.J_fr,
             shape=shape,
             Q=self._Q,
             T=self._T,
@@ -93,7 +92,6 @@ class TimeFrequecyScatteringKeras(ScatteringKeras, TimeFrequencyScatteringBase):
             F=self._F,
             stride_fr=self._stride_fr,
             out_type=self.out_type,
-            backend=self.backend,
             format=self._format,
         )
         ScatteringKeras.build(self, input_shape)
@@ -110,6 +108,7 @@ class TimeFrequecyScatteringKeras(ScatteringKeras, TimeFrequencyScatteringBase):
         keys = ["J", "J_fr", "Q", "Q_fr", "T", "F", "stride", "stride_fr", "format"]
         return {key: getattr(self, key) for key in keys}
 
-TimeFrequecyScatteringKeras._document()
+
+TimeFrequencyScatteringKeras._document()
 
 __all__ = ["ScatteringKeras1D", "TimeFrequencyScatteringKeras"]

@@ -1,6 +1,6 @@
 from .scattering1d.frontend.keras_frontend import (
     ScatteringKeras1D as Scattering1D,
-    TimeFrequecyScatteringKeras as TimeFrequencyScattering,
+    TimeFrequencyScatteringKeras as TimeFrequencyScattering,
 )
 from .scattering2d.frontend.keras_frontend import ScatteringKeras2D as Scattering2D
 

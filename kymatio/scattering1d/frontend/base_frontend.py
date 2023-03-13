@@ -26,8 +26,13 @@ class ScatteringBase1D(ScatteringBase):
         self.out_type = out_type
         self.backend = backend
 
+        # Will be removed in v0.5
         self._oversampling = oversampling
-        self._reduction = np.mean
+
+        # Fixes a bug (#984) in U2 energy across psi2 levels.
+        # To restore the (wrong) energy scaling of Kymatio <0.4,
+        # set this field to np.mean. Will be removed in v1.0
+        self._reduction = np.sum
 
     def build(self):
         """Set up padding and filters
@@ -576,7 +581,6 @@ class TimeFrequencyScatteringBase(ScatteringBase1D):
         self.oversampling_fr = 0
         self._stride_fr = stride_fr
         self.format = format
-        self._reduction = np.sum
 
     def build(self):
         super(TimeFrequencyScatteringBase, self).build()
@@ -611,10 +615,10 @@ class TimeFrequencyScatteringBase(ScatteringBase1D):
 
     def create_filters(self):
         phi0_fr_f,= scattering_filter_factory(self._N_padded_fr,
-            self.J_fr, (), self.F, self.filterbank_fr, self._reduction)
+            self.J_fr, (), self.F, self.filterbank_fr, _reduction=np.sum)
         phi1_fr_f, psis_fr_f = scattering_filter_factory(self._N_padded_fr,
             self.J_fr, self.Q_fr, 2**self.J_fr, self.filterbank_fr,
-            self._reduction)
+            _reduction=np.sum)
         self.filters_fr = (phi0_fr_f, [phi1_fr_f] + psis_fr_f)
 
         # Check for absence of aliasing
