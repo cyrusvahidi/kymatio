@@ -63,7 +63,7 @@ def joint_timefrequency_scattering(U_0, backend, filters, log2_stride,
     time_gen = time_scattering_widthfirst(
         U_0, backend, filters, log2_stride, average_local)
     yield next(time_gen)
-
+    
     # First order: S1(n1, t) = (|x*psi_{n1}|*phi)(t[log2_T])
     S_1 = next(time_gen)
 
@@ -113,7 +113,6 @@ def time_scattering_widthfirst(U_0, backend, filters, log2_stride, average_local
     """
     # compute the Fourier transform
     U_0_hat = backend.rfft(U_0)
-
     # Get S0, a 2D array indexed by (batch, time)
     phi = filters[0]
     log2_T = phi['j']
@@ -154,13 +153,13 @@ def time_scattering_widthfirst(U_0, backend, filters, log2_stride, average_local
 
     # Stack S1 paths over the penultimate dimension with shared n1.
     # S1 is a real-valued 3D array indexed by (batch, n1, time)
-    S_1 = backend.stack(S_1_list)
-
+    S_1 = backend.stack(S_1_list, dim=2)
+    breakpoint()
     # S1 is a stack of multiple n1 paths so we put (-1) as placeholder.
     # n1 ranges between 0 (included) and n1_max (excluded), which we store
     # separately for the sake of meta() and padding/unpadding downstream.
     yield {'coef': S_1, 'j': (-1,), 'n': (-1,), 'n1_max': len(S_1_list)}
-
+    
     # Second order. Note that n2 is the outer loop (width-first algorithm)
     psi2 = filters[2]
     for n2 in range(len(psi2)):
@@ -235,7 +234,6 @@ def frequency_scattering(X, backend, filters_fr, log2_stride_fr,
     Y_2_fr{n2,n_fr}(t, n1) = (Y_2*psi_{n_fr})(t[j2], n1[j_fr]),
         conv. over n1, broadcast over t, n1 zero-padded up to N_fr
     """
-
     # Unpack filters_fr list
     phi, psis = filters_fr
     log2_F = phi['j']
@@ -245,6 +243,7 @@ def frequency_scattering(X, backend, filters_fr, log2_stride_fr,
 
     # Zero-pad frequency domain
     pad_right = phi['N'] - X['n1_max']
+    breakpoint()
     X_pad = backend.pad_frequency(X_T, pad_right)
 
     # Spinned case switch
@@ -261,6 +260,7 @@ def frequency_scattering(X, backend, filters_fr, log2_stride_fr,
         j_fr = psi['j']
         spin = np.sign(psi['xi'])
         k_fr = min(j_fr, log2_stride_fr) if average_local_fr else j_fr
+        breakpoint()
         Y_fr_hat = backend.cdgmm(X_hat, psi['levels'][0])
         Y_fr_sub = backend.subsample_fourier(Y_fr_hat, 2 ** k_fr)
         Y_fr = backend.ifft(Y_fr_sub)

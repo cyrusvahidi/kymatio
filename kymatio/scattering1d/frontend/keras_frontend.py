@@ -97,12 +97,16 @@ class TimeFrequencyScatteringKeras(ScatteringKeras, TimeFrequencyScatteringBase)
         ScatteringKeras.build(self, input_shape)
 
     def compute_output_shape(self, input_shape):
-        input_shape = tensor_shape.TensorShape(input_shape).as_list()
-        nc = self.S.output_size()
-        k0 = max(self.J - self._oversampling, 0)
-        ln = self.S.ind_end[k0] - self.S.ind_start[k0]
-        output_shape = [input_shape[0], nc, ln]
-        return tensor_shape.TensorShape(output_shape)
+        breakpoint()
+        if self.format == "time":
+            input_shape = tensor_shape.TensorShape(input_shape).as_list()
+            nc = self.S.output_size()
+            k0 = max(self.J - self._oversampling, 0)
+            ln = self.S.ind_end[k0] - self.S.ind_start[k0]
+            output_shape = [input_shape[0], nc, ln]
+            return tensor_shape.TensorShape(output_shape)
+        elif self.format == "joint":
+            pass
 
     def get_config(self):
         keys = ["J", "J_fr", "Q", "Q_fr", "T", "F", "stride", "stride_fr", "format"]

@@ -1,9 +1,10 @@
+import os, io
 import numpy as np
 import pytest
 import torch, tensorflow as tf
 import jax.numpy as jnp
 from jax import device_put
-from tensorflow.keras.layers import Input, Flatten, Dense
+from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
 import kymatio
@@ -570,12 +571,12 @@ def test_jtfs_torch_tf_frontends(frontend):
     x[kwargs["shape"][0] // 2] = 1
 
     # format='time'
-    S = TimeFrequencyScattering(frontend="torch", T=None, F=0, format="time", **kwargs)
+    S = TimeFrequencyScattering(frontend=frontend, T=None, F=0, format="time", **kwargs)
     Sx = S(x)
     assert Sx.ndim == 2
 
     # format='time' with global averaging
-    S = TimeFrequencyScattering(frontend="torch", T="global", F=0, format="time", **kwargs)
+    S = TimeFrequencyScattering(frontend=frontend, T="global", F=0, format="time", **kwargs)
     Sx = S(x)
     assert Sx.ndim == 2
 
@@ -585,6 +586,18 @@ def test_jtfs_torch_tf_frontends(frontend):
     Sx = S(x)
     assert isinstance(Sx, torch.Tensor) if frontend == "torch" else isinstance(Sx, tf.Tensor)
     assert Sx.ndim == 3
+
+
+def test_jtfs_tf():
+    kwargs = {"J": 8, "J_fr": 3, "shape": (8192,), "Q": 3}
+    x = np.zeros(kwargs["shape"])
+    x[kwargs["shape"][0] // 2] = 1
+    # Local averaging
+    S = TimeFrequencyScattering(frontend="tensorflow", format="time", **kwargs)
+    assert S.F == (2**S.J_fr)
+    Sx = S(x)
+    assert Sx.ndim == 3
+
 
 
 def test_jtfs_jax_frontend():
@@ -609,9 +622,7 @@ def test_jtfs_jax_frontend():
     assert Sx.ndim == 2
 
 
-frontends = ["torch", "tensorflow"]
-@pytest.mark.parametrize("frontend", frontends)
-def test_F(frontend):
+def test_F():
     """
     Applies scattering on a stored signal with non-default F
     """
@@ -620,10 +631,10 @@ def test_F(frontend):
     x[kwargs["shape"][0] // 2] = 1
 
     # default F
-    jtfs0 = TimeFrequencyScattering(frontend="torch", format="joint", **kwargs)
+    jtfs0 = TimeFrequencyScatteringTorch(format="joint", **kwargs)
 
     # explicit F
-    jtfs1 = TimeFrequencyScattering(frontend="torch", format="joint", F=2**kwargs['J_fr'], **kwargs)
+    jtfs1 = TimeFrequencyScatteringTorch(format="joint", F=2**kwargs['J_fr'], **kwargs)
 
     Sx0 = jtfs0(x)
     Sx1 = jtfs1(x)
@@ -633,7 +644,7 @@ def test_F(frontend):
     """ non-default F smaller than 2**J_fr. This checks that the subsampling
         index does not exceed log2_F and cause an IndexError at runtime (#976).
     """
-    jtfs2 = TimeFrequencyScattering(frontend="torch", format="joint", F=2**kwargs['J_fr'] // 4, **kwargs)
+    jtfs2 = TimeFrequencyScatteringTorch(format="joint", F=2**kwargs['J_fr'] // 4, **kwargs)
     Sx2 = jtfs2(x)
     assert Sx0.shape[0] == Sx2.shape[0] and Sx0.shape[2] == Sx2.shape[2] and Sx0.shape[1] < Sx2.shape[1]
 
@@ -659,17 +670,21 @@ def test_986(backend):
     )
 
 
-def test_jtfs_keras_frontend():
+def test_keras_frontend():
     # Test __init__
     kwargs = {"J": 8, "J_fr": 3, "Q": 3}
-    shape = (8192, )
-    inputs = Input(shape=shape)
-
+    x = np.ones((1, 8192))
+    inputs0 = Input(shape=(x.shape[-1]))
     # Local averaging
     S = TimeFrequencyScatteringKeras(format="time", **kwargs)
+    Sc0 = S(inputs0)
     assert S.F == (2**S.J_fr)
-    Sx = S(inputs)
-
+    model = Model(inputs0, Sc0)
+    model.compile(optimizer='adam',
+                  loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+    Sg0 = model.predict(x)
+    assert S.backend.name == 'tensorflow'
     # # default
     # inputs0 = Input(shape=(x.shape[-1]))
     # sc0 = S(inputs0)
