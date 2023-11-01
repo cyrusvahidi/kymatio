@@ -674,7 +674,7 @@ def test_keras_frontend():
     # Test __init__
     kwargs = {"J": 8, "J_fr": 3, "Q": 3}
     x = np.ones((1, 8192))
-    inputs0 = Input(shape=(x.shape[-1]))
+    inputs0 = Input(shape=x.shape)
     # Local averaging
     S = TimeFrequencyScatteringKeras(format="time", **kwargs)
     Sc0 = S(inputs0)

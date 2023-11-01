@@ -243,7 +243,6 @@ def frequency_scattering(X, backend, filters_fr, log2_stride_fr,
 
     # Zero-pad frequency domain
     pad_right = phi['N'] - X['n1_max']
-    breakpoint()
     X_pad = backend.pad_frequency(X_T, pad_right)
 
     # Spinned case switch
